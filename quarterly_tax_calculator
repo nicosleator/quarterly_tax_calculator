@@ -75,8 +75,8 @@ calculate_nyc_tax <- function(n) {
 
 
 #load data
-quarterly_income <- readRDS("quarterly_income.rds")
-quarterly_expences <- readRDS("quarterly_expences.rds")
+quarterly_income <- readCSV("quarterly_income.csv")
+quarterly_expences <- readCSV("quarterly_expences.csv")
 
 #calculate tax deductible expenses by adding all business expenses together. business meals are only 50% deductible
 tax_deductible_expenses <- sum(quarterly_expences$Q1_2025, na.rm = TRUE) - 

@@ -30,6 +30,16 @@ The program reads two `.rds` files that must be present in the working directory
 | `quarterly_income.rds` | Quarterly business income |
 | `quarterly_expences.rds` | Quarterly business expenses |
 
+`quarterly_income.rds` and `quarterly_expences.rds` should be structured with a
+`category` column and one column per quarter (e.g. `Q1_2025`, `Q2_2025`), with a
+`TOTAL` row summarizing each quarter. For example:
+
+| category | Q1_2025 | Q2_2025 |
+|---|---|---|
+| income_source_1 | 1000.00 | 1500.00 |
+| income_source_2 | 500.00 | 750.00 |
+| TOTAL | 1500.00 | 2250.00 |
+
 ## Configuration
 
 Update the following variables in the **Find AGI** section each year:

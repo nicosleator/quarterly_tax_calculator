@@ -23,14 +23,12 @@ This program assumes the filer is:
 
 ## Data
 
-The program reads four `.rds` files that must be present in the working directory:
+The program reads two `.rds` files that must be present in the working directory:
 
 | File | Description |
 |---|---|
-| `financial_data.rds` | General financial data |
 | `quarterly_income.rds` | Quarterly business income |
 | `quarterly_expences.rds` | Quarterly business expenses |
-| `quarterly_personal.rds` | Personal financial data |
 
 ## Configuration
 

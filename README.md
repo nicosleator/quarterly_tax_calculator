@@ -23,14 +23,14 @@ This program assumes the filer is:
 
 ## Data
 
-The program reads two `.rds` files that must be present in the working directory:
+The program reads two `.csv` files that must be present in the working directory:
 
 | File | Description |
 |---|---|
-| `quarterly_income.rds` | Quarterly business income |
-| `quarterly_expences.rds` | Quarterly business expenses |
+| `quarterly_income.csv` | Quarterly business income |
+| `quarterly_expences.csv` | Quarterly business expenses |
 
-`quarterly_income.rds` and `quarterly_expences.rds` should be structured with a
+`quarterly_income.csv` and `quarterly_expences.csv` should be structured with a
 `category` column and one column per quarter (e.g. `Q1_2025`, `Q2_2025`), with a
 `TOTAL` row summarizing each quarter. For example:
 

@@ -1,0 +1,236 @@
+library(readr)
+library(dplyr)
+library(tibble)
+setwd("~/Documents/Documents - Nico’s MacBook Pro/Important Docs/Taxes:Financial/2025/2025 Q2")
+#This program calculates estimated tax for sole proprietorship in 2025 assuming the user is single, no dependents, not a farmer, not a charity, and has investments.
+
+
+
+#-------------------TAX FUNCTIONS-------------------
+
+
+
+#federal tax function
+calculate_fed_tax <- function(n) {
+  if (n > 0 & n <= 11925) {
+    tax <- n * 0.10
+  } else if (n <= 48475) {
+    tax <- (n * 0.12) - 238
+  } else if (n <= 103350) {
+    tax <- (n * 0.22) - 5086
+  } else if (n <= 197300) {
+    tax <- (n * 0.24) - 7153
+  } else if (n <= 250525) {
+    tax <- (n * 0.32) - 22937
+  } else if (n <= 626350) {
+    tax <- (n * 0.35) - 30452
+  } else {
+    tax <- (n * 0.37) - 37968
+  }
+  return(as.numeric(tax))
+}
+
+#ny state tax function
+calculate_nys_tax <- function(n) {
+  if (n > 0 & n <= 8500) {
+    tax <- n * .04
+  } else if (n <= 11700) {
+    tax <- 340 + (.045 * (n - 8500))
+  } else if (n <= 13900) {
+    tax <- 484 + (.0525 * (n - 11700))
+  } else if (n <= 80650) {
+    tax <- 600 + (.055 * (n - 13900))
+  } else if (n <= 215400) {
+    tax <- 4271 + (.06 * (n - 80650))
+  } else if (n <= 1077550) {
+    tax <- 12356 + (.0685 * (n - 215400))
+  } else if (n <= 5000000) {
+    tax <- 71413 + (.0965 * (n - 1077550))
+  } else if (n <= 25000000) {
+    tax <- 449929 + (.103 * (n - 5000000))
+  } else {
+    tax <- 2509929 + (.109 * (n - 25000000))
+  }
+  return(as.numeric(tax))
+}
+
+#nyc tax function
+calculate_nyc_tax <- function(n) {
+  if (n > 0 & n <= 12000) {
+    tax <- n * .03078
+  } else if (n <= 25000) {
+    tax <- 369 + (.03762 * (n - 12000))
+  } else if (n <= 50000) {
+    tax <- 858 + (.03819 * (n - 25000))
+  } else {
+    tax <- 1813 + (.03867 * (n - 50000))
+  }
+  return(as.numeric(tax))
+}
+
+
+
+#-------------------FIND AGI-------------------
+
+
+
+#load data
+quarterly_income <- readRDS("quarterly_income.rds")
+quarterly_expences <- readRDS("quarterly_expences.rds")
+
+#calculate tax deductible expenses by adding all business expenses together. business meals are only 50% deductible
+tax_deductible_expenses <- sum(quarterly_expences$Q1_2025, na.rm = TRUE) - 
+  (quarterly_expences[quarterly_expences$category == "business_meal", "Q1_2025"] * .5) - 
+  quarterly_expences[quarterly_expences$category == "TOTAL", "Q1_2025"]
+
+#year to date adjusted gross income. 
+ytd_business_agi <- quarterly_income[quarterly_income$category == "TOTAL", "Q1_2025"] + tax_deductible_expenses
+ 
+#quarter to date. Returns a string that contains all of the quarters present in the df     
+qtd <- grep("^Q[1-4]_\\d{4}$", colnames(quarterly_expences), value = TRUE)
+
+#CHECK TO SEE IF THERE ARE BUGS IN THIS WHEN I PUT IN Q2 DATA!!!
+
+#checks to see how many quarters have been reported and created a multiplier to determine estimated agi for my business
+if (any(grepl("Q4", qtd))) {
+  multiplier <- 1
+} else if (any(grepl("Q3", qtd))) {
+  multiplier <- 1.3333333333333
+} else if (any(grepl("Q2", qtd))) {
+  multiplier <- 2
+} else {
+  multiplier <- 4
+}
+
+#calculated estimated income from business by multiplying the ytd value by our multiplier  
+estimated_business_agi <- ytd_business_agi * multiplier
+
+#income/loss from investments
+long_term_capital_gain_loss <- 60772.10
+short_term_capital_gain_loss <- 685.17
+dividends_and_intrest <- 1043.80
+
+#sum business income with personal investment income
+estimated_agi = sum(estimated_business_agi, long_term_capital_gain_loss, short_term_capital_gain_loss, dividends_and_intrest)
+
+
+
+#-------------------FEDERAL TAX-------------------
+
+
+
+#self-employment tax and deduction worksheet for lines 1 and 9 of the estimated tax worksheet
+se_line_3 <- estimated_business_agi * .9235
+se_line_4 <- se_line_3 * .029
+se_line_7 <- 176100 - se_line_4
+se_line_8 <- min(se_line_3, se_line_7)
+se_line_9 <- se_line_8 * 0.124
+se_line_10 <- se_line_4 + se_line_9
+se_deduction <- se_line_10 * .5
+
+#estimated tax worksheet
+estimated_agi <- estimated_agi - se_deduction
+standard_deducton <- 15000 #may change for each year
+etw_line_3 <- estimated_agi - standard_deducton
+
+#qualified dividends and capital gains tax worksheet p505 2-5 (line 10 on etw)
+#if i have 28% rate gain or loss expected or un-recaptured section 1250 gain expected for 2025 I need to change a good amount of stuff on here, but that seems very unlikely
+if(long_term_capital_gain_loss != 0 |
+   short_term_capital_gain_loss != 0 |
+   dividends_and_intrest != 0) {#if there are realized gains or losses
+  
+  cgtw_line_1 <- etw_line_3
+  cgtw_line_3 <- long_term_capital_gain_loss + short_term_capital_gain_loss
+  cgtw_line_4 <- cgtw_line_3 + dividends_and_intrest
+  cgtw_line_9 <- cgtw_line_4 
+  cgtw_line_10 <- cgtw_line_1 - cgtw_line_9
+  cgtw_line_11 <- min(cgtw_line_1, 48350)#may change each year
+  cgtw_line_12 <- min(cgtw_line_10, cgtw_line_11)
+  cgtw_line_13a <- pmax(cgtw_line_1 - cgtw_line_4, 0)
+  cgtw_line_13b <- min(cgtw_line_1, 197300)
+  cgtw_line_13c <- min(cgtw_line_10, cgtw_line_13b)
+  cgtw_line_14 <- max(cgtw_line_13a, cgtw_line_13c)
+  if(cgtw_line_12 != cgtw_line_11) {cgtw_line_15 <- cgtw_line_11 - cgtw_line_12}
+  if(cgtw_line_1 != cgtw_line_11){
+    cgtw_line_16 <- min(cgtw_line_1, cgtw_line_9)
+   cgtw_line_17 <- cgtw_line_15
+    cgtw_line_18 <- pmax(cgtw_line_16 - cgtw_line_17, 0)
+    cgtw_line_19 <- 533400 #if married changes, may change each year
+    cgtw_line_20 <- min(cgtw_line_1, cgtw_line_19)
+    cgtw_line_21 <- cgtw_line_14 + cgtw_line_15
+    cgtw_line_22 <- pmax(cgtw_line_20 - cgtw_line_21, 0)
+    cgtw_line_23 <- min(cgtw_line_18, cgtw_line_22)
+    cgtw_line_24 <- cgtw_line_23 * .15
+    cgtw_line_25 <- cgtw_line_17 + cgtw_line_23
+    if (cgtw_line_17 + cgtw_line_23 != cgtw_line_1) {
+      cgtw_line_26 <- cgtw_line_16 - cgtw_line_25
+      cgtw_line_27 <- cgtw_line_26 * .2
+      cgtw_line_29 <- cgtw_line_4 + cgtw_line_14
+      cgtw_line_30 <- cgtw_line_1
+      cgtw_line_31 <- pmax(cgtw_line_29 - cgtw_line_30, 0)
+    }
+  }
+  cgtw_line_37 <- calculate_fed_tax(cgtw_line_14)
+  cgtw_line_38 <- sum(cgtw_line_24, cgtw_line_27, cgtw_line_37)
+  cgtw_line_39 <- calculate_fed_tax(cgtw_line_1)
+  cgtw_line_40 <- min(cgtw_line_38, cgtw_line_39) #tax on all capital gains
+  etw_line_4 <- cgtw_line_40
+  
+} else {#if there are no realized gains or losses
+  etw_line_4 <- calculate_fed_tax(etw_line_3)
+}
+
+#back to estimated tax worksheet
+etw_line_9 <- se_line_10
+etw_line_11 <- etw_line_4 + etw_line_9 #total estimated tax
+etw_line_12a <- etw_line_11 * .9
+etw_line_12b <- 6345 #prior Year's Tax 
+etw_line_12c <- min(etw_line_12a, etw_line_12b) #required annual payment to avoid a penalty
+
+
+
+#-------------------STATE/CITY TAX-------------------
+
+
+
+nys_line_a1 <- estimated_agi
+nys_line_a3 <- nys_line_a1 - standard_deducton
+nys_line_a6 <- calculate_nys_tax(nys_line_a3) #state estimated tax
+nys_line_a23 <- nys_line_a6 * .9
+
+nyc_line_b7 <- nys_line_a3 #city taxible income, usually the same as state, for me it is the same unless I do charity or some other bs
+nyc_line_b7a <- calculate_nyc_tax(nyc_line_b7) #city estimated tax
+nyc_line_b23 <- nyc_line_b7a * .9
+
+nys_line_a25 <- 1162#previous year state tax
+nyc_line_b25 <- 825#previous year city tax
+
+nys_line_a26 <- min(nys_line_a23, nys_line_a25)
+nyc_line_b26 <- min(nyc_line_b23, nyc_line_b25)
+
+
+
+#-------------------PRINT RESULTS-------------------
+
+
+
+cat(
+  " ---Total Estimated Federal Tax is", round(as.numeric(etw_line_11), 2), "\n\n",
+  "Minemum Quarterly Federal Payment:", round(as.numeric(etw_line_12c) / 4, 2), "\n",
+  "Maximum Quarterly Federal Payment:", round(as.numeric(etw_line_11) / 4, 2), "\n\n",
+  "---Total Estimated NY State Tax is", round(as.numeric(nys_line_a6), 2), "\n\n",
+  "Minemum Quarterly NY State Payment:", round(as.numeric(nys_line_a26) / 4, 2), "\n",
+  "Maximum Quarterly NY State Payment:", round(as.numeric(max(nys_line_a6, nys_line_a26)) / 4, 2), "\n\n",
+  "---Total Estimated NYC Tax is", round(as.numeric(nyc_line_b7a), 2), "\n\n",
+  "Minemum Quarterly NYC Payment:", round(as.numeric(nyc_line_b26) / 4, 2), "\n",
+  "Maximum Quarterly NYC Payment:", round(as.numeric(max(nyc_line_b7a, nyc_line_b26)) / 4, 2),"\n\n",
+  "---Total Estimated Tax is", sum(round(as.numeric(etw_line_11), 2), 
+                                          round(as.numeric(nys_line_a6), 2),
+                                          round(as.numeric(nyc_line_b7a), 2)),"\n\n",
+  "Minemum Quarterly Tax Payment: ", sum(round(as.numeric(nyc_line_b26) / 4, 2), 
+                                             round(as.numeric(nys_line_a26) / 4, 2),
+                                             round(as.numeric(etw_line_12c) / 4, 2)), "\n",
+  "Maxemum Quarterly Tax Payment: ", sum(round(as.numeric(max(nyc_line_b7a, nyc_line_b26)) / 4, 2), 
+                                             round(as.numeric(max(nys_line_a6, nys_line_a26)) / 4, 2),
+                                             round(as.numeric(etw_line_11) / 4, 2))
+)

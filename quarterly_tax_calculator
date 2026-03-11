@@ -106,9 +106,9 @@ if (any(grepl("Q4", qtd))) {
 estimated_business_agi <- ytd_business_agi * multiplier
 
 #income/loss from investments
-long_term_capital_gain_loss <- 60772.10
-short_term_capital_gain_loss <- 685.17
-dividends_and_intrest <- 1043.80
+long_term_capital_gain_loss <- 0
+short_term_capital_gain_loss <- 0
+dividends_and_intrest <- 0
 
 #sum business income with personal investment income
 estimated_agi = sum(estimated_business_agi, long_term_capital_gain_loss, short_term_capital_gain_loss, dividends_and_intrest)

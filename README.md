@@ -1,4 +1,4 @@
-# estimated-tax-calculator
+# quarterly estimated tax calculator
 
 Calculates quarterly estimated tax payments for a sole proprietor in New York City,
 covering federal, NY state, and NYC taxes. Outputs both minimum and maximum quarterly

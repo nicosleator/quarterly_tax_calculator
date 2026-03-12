@@ -40,6 +40,8 @@ The program reads two `.csv` files that must be present in the working directory
 | income_source_2 | 500.00 | 750.00 |
 | TOTAL | 1500.00 | 2250.00 |
 
+Note: Business meal expenses must be listed under a category named business_meal, as they are only 50% tax deductible.
+
 ## Configuration
 
 Update the following variables in the **Find AGI** section each year:
